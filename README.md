@@ -1,5 +1,7 @@
 # Metascraper API
 
+> ⚠️ **Warning**: This project is fully vibe coded and should be used at your own risk!
+
 A REST API and web interface that wraps the [metascraper.js.org](https://metascraper.js.org/) package to extract metadata from websites.
 
 ## Features
