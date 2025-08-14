@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metascraper API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="url"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+        .metadata {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .metadata-key {
+            font-weight: bold;
+            color: #555;
+        }
+        .metadata-value {
+            word-break: break-all;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Metascraper API</h1>
+        <p>Enter a URL to extract metadata using the Metascraper library.</p>
+        
+        <form id="scrapeForm">
+            <div class="form-group">
+                <label for="url">Website URL:</label>
+                <input type="url" id="url" placeholder="https://example.com" required>
+            </div>
+            <button type="submit" id="submitBtn">Scrape Metadata</button>
+        </form>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('scrapeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const url = document.getElementById('url').value;
+            const submitBtn = document.getElementById('submitBtn');
+            const resultDiv = document.getElementById('result');
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Scraping...';
+            resultDiv.innerHTML = '<div class="loading">Scraping metadata...</div>';
+            
+            try {
+                const response = await fetch('/api/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    let metadataHtml = '<div class="result success"><h3>Metadata:</h3><div class="metadata">';
+                    
+                    for (const [key, value] of Object.entries(data)) {
+                        if (value) {
+                            if (key === 'image' || key === 'logo') {
+                                metadataHtml += `<div class="metadata-key">${key}:</div><div class="metadata-value"><img src="${value}" alt="${key}" style="max-width: 100px; height: auto;"><br><a href="${value}" target="_blank">${value}</a></div>`;
+                            } else {
+                                metadataHtml += `<div class="metadata-key">${key}:</div><div class="metadata-value">${value}</div>`;
+                            }
+                        }
+                    }
+                    
+                    metadataHtml += '</div></div>';
+                    resultDiv.innerHTML = metadataHtml;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${data.error}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${error.message}</div>`;
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Scrape Metadata';
+        });
+    </script>
+</body>
+</html>
