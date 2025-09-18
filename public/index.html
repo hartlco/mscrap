@@ -37,6 +37,11 @@
             border-radius: 4px;
             font-size: 16px;
         }
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
         button {
             background-color: #007bff;
             color: white;
@@ -83,6 +88,20 @@
             text-align: center;
             color: #666;
         }
+        .readable {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+        }
+        .article-content {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+            line-height: 1.6;
+        }
+        .article-content img {
+            max-width: 100%;
+            height: auto;
+        }
     </style>
 </head>
 <body>
@@ -95,59 +114,121 @@
                 <label for="url">Website URL:</label>
                 <input type="url" id="url" placeholder="https://example.com" required>
             </div>
-            <button type="submit" id="submitBtn">Scrape Metadata</button>
+            <div class="actions">
+                <button type="submit" id="submitBtn">Scrape Metadata</button>
+                <button type="button" id="readableBtn">Get Readable Content</button>
+            </div>
         </form>
         
-        <div id="result"></div>
+        <div id="metadataResult"></div>
+        <div id="readableResult"></div>
     </div>
 
     <script>
-        document.getElementById('scrapeForm').addEventListener('submit', async (e) => {
+        const scrapeForm = document.getElementById('scrapeForm');
+        const urlInput = document.getElementById('url');
+        const submitBtn = document.getElementById('submitBtn');
+        const readableBtn = document.getElementById('readableBtn');
+        const metadataResultDiv = document.getElementById('metadataResult');
+        const readableResultDiv = document.getElementById('readableResult');
+
+        const normalizeUrl = (value) => value.trim();
+
+        const withLoadingState = (button, label, fn) => {
+            const original = button.textContent;
+            button.disabled = true;
+            button.textContent = label;
+
+            return fn().finally(() => {
+                button.disabled = false;
+                button.textContent = original;
+            });
+        };
+
+        scrapeForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const url = document.getElementById('url').value;
-            const submitBtn = document.getElementById('submitBtn');
-            const resultDiv = document.getElementById('result');
-            
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Scraping...';
-            resultDiv.innerHTML = '<div class="loading">Scraping metadata...</div>';
-            
-            try {
-                const response = await fetch('/api/scrape', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ url })
-                });
+            const url = normalizeUrl(urlInput.value);
+
+            await withLoadingState(submitBtn, 'Scraping...', async () => {
+                metadataResultDiv.innerHTML = '<div class="loading">Scraping metadata...</div>';
                 
-                const data = await response.json();
-                
-                if (response.ok) {
-                    let metadataHtml = '<div class="result success"><h3>Metadata:</h3><div class="metadata">';
+                try {
+                    const response = await fetch('/api/scrape', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ url })
+                    });
                     
-                    for (const [key, value] of Object.entries(data)) {
-                        if (value) {
-                            if (key === 'image' || key === 'logo') {
-                                metadataHtml += `<div class="metadata-key">${key}:</div><div class="metadata-value"><img src="${value}" alt="${key}" style="max-width: 100px; height: auto;"><br><a href="${value}" target="_blank">${value}</a></div>`;
-                            } else {
-                                metadataHtml += `<div class="metadata-key">${key}:</div><div class="metadata-value">${value}</div>`;
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        let metadataHtml = '<div class="result success"><h3>Metadata:</h3><div class="metadata">';
+                        
+                        for (const [key, value] of Object.entries(data)) {
+                            if (value) {
+                                if (key === 'image' || key === 'logo') {
+                                    metadataHtml += `<div class="metadata-key">${key}:</div><div class="metadata-value"><img src="${value}" alt="${key}" style="max-width: 100px; height: auto;"><br><a href="${value}" target="_blank" rel="noopener noreferrer">${value}</a></div>`;
+                                } else {
+                                    metadataHtml += `<div class="metadata-key">${key}:</div><div class="metadata-value">${value}</div>`;
+                                }
                             }
                         }
+                        
+                        metadataHtml += '</div></div>';
+                        metadataResultDiv.innerHTML = metadataHtml;
+                    } else {
+                        metadataResultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${data.error}</div>`;
                     }
-                    
-                    metadataHtml += '</div></div>';
-                    resultDiv.innerHTML = metadataHtml;
-                } else {
-                    resultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${data.error}</div>`;
+                } catch (error) {
+                    metadataResultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${error.message}</div>`;
                 }
-            } catch (error) {
-                resultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${error.message}</div>`;
+            });
+        });
+
+        readableBtn.addEventListener('click', async () => {
+            const url = normalizeUrl(urlInput.value);
+
+            if (!url) {
+                readableResultDiv.innerHTML = '<div class="result error"><strong>Error:</strong> Please enter a URL first.</div>';
+                urlInput.focus();
+                return;
             }
-            
-            submitBtn.disabled = false;
-            submitBtn.textContent = 'Scrape Metadata';
+
+            await withLoadingState(readableBtn, 'Loading...', async () => {
+                readableResultDiv.innerHTML = '<div class="loading">Generating readable content...</div>';
+
+                try {
+                    const response = await fetch('/api/readable', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ url })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        readableResultDiv.innerHTML = `
+                            <div class="result readable">
+                                <h3>Readable Content:</h3>
+                                <div><strong>Title:</strong> ${data.title || 'Not available'}</div>
+                                ${data.byline ? `<div><strong>By:</strong> ${data.byline}</div>` : ''}
+                                ${data.siteName ? `<div><strong>Source:</strong> ${data.siteName}</div>` : ''}
+                                ${data.excerpt ? `<div><strong>Excerpt:</strong> ${data.excerpt}</div>` : ''}
+                                <div class="article-content">${data.content || '<em>No readable content found.</em>'}</div>
+                            </div>
+                        `;
+                    } else {
+                        readableResultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${data.error}</div>`;
+                    }
+                } catch (error) {
+                    readableResultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${error.message}</div>`;
+                }
+            });
         });
     </script>
 </body>
