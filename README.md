@@ -64,6 +64,31 @@ Response:
 }
 ```
 
+### Get Readable Content
+
+**POST** `/api/readable`
+
+Request body:
+```json
+{
+  "url": "https://example.com/article"
+}
+```
+
+Response:
+```json
+{
+  "url": "https://example.com/article",
+  "title": "Example Article",
+  "byline": "Example Author",
+  "excerpt": "Concise summary of the article content.",
+  "length": 3567,
+  "siteName": "Example Site",
+  "content": "<div><p>HTML for the cleaned article body…</p></div>",
+  "textContent": "Plain text version of the article content."
+}
+```
+
 ### Health Check
 
 **GET** `/api/health`
@@ -101,10 +126,14 @@ docker compose up -d
 docker compose down
 ```
 
-## Example with curl
+## Examples with curl
 
 ```bash
 curl -X POST http://localhost:3000/api/scrape \
   -H "Content-Type: application/json" \
   -d '{"url": "https://github.com/microlinkhq/metascraper"}'
+
+curl -X POST http://localhost:3000/api/readable \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/article"}'
 ```
