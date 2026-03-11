@@ -117,6 +117,7 @@
             <div class="actions">
                 <button type="submit" id="submitBtn">Scrape Metadata</button>
                 <button type="button" id="readableBtn">Get Readable Content</button>
+                <button type="button" id="clearCacheBtn" style="background-color: #dc3545; margin-left: auto;">Clear Cache</button>
             </div>
         </form>
         
@@ -182,6 +183,23 @@
                     } else {
                         metadataResultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${data.error}</div>`;
                     }
+                } catch (error) {
+                    metadataResultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${error.message}</div>`;
+                }
+            });
+        });
+
+        const clearCacheBtn = document.getElementById('clearCacheBtn');
+
+        clearCacheBtn.addEventListener('click', async () => {
+            if (!confirm('Clear all cached entries?')) return;
+
+            await withLoadingState(clearCacheBtn, 'Clearing...', async () => {
+                try {
+                    const response = await fetch('/api/cache', { method: 'DELETE' });
+                    const data = await response.json();
+                    metadataResultDiv.innerHTML = `<div class="result success">Cache cleared (${data.deleted} entries removed).</div>`;
+                    readableResultDiv.innerHTML = '';
                 } catch (error) {
                     metadataResultDiv.innerHTML = `<div class="result error"><strong>Error:</strong> ${error.message}</div>`;
                 }

@@ -79,6 +79,9 @@ dist
 .out
 .storybook-out
 
+# Cache
+cache/
+
 # Temporary folders
 tmp/
 temp/
