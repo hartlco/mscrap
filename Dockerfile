@@ -10,6 +10,8 @@ RUN apk add --no-cache python3 make g++ && \
 
 COPY . .
 
+RUN mkdir -p /app/cache && chown -R node:node /app/cache
+
 EXPOSE 3000
 
 USER node
